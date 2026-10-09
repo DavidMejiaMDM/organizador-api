@@ -14,6 +14,7 @@ const horarioSchema = new mongoose.Schema(
 
 const claseSchema = new mongoose.Schema(
   {
+    usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario", required: true, index: true },
     nombreMateria: { type: String, required: [true, "El nombre de la materia es obligatorio"], trim: true },
     docente: { type: String, trim: true, default: "" },
     salon: { type: String, trim: true, default: "" },

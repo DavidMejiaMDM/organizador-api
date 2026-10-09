@@ -4,6 +4,7 @@ const TIPOS = ["TAREA", "PARCIAL", "TALLER"];
 
 const tareaSchema = new mongoose.Schema(
   {
+    usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario", required: true, index: true },
     claseId: { type: mongoose.Schema.Types.ObjectId, ref: "Clase", required: [true, "La asignatura es obligatoria"] },
     titulo: { type: String, required: [true, "El título es obligatorio"], trim: true },
     tipo: { type: String, enum: TIPOS, default: "TAREA" },

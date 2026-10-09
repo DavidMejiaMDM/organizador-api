@@ -12,6 +12,7 @@
 /captures
 .externalNativeBuild
 .cxx
-.env
 node_modules
 local.properties
+.env
+env/
