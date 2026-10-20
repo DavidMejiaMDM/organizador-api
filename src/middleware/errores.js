@@ -8,6 +8,23 @@ function noEncontrada(req, res) {
 
 // Manejador general de errores
 function manejarErrores(err, req, res, next) {
+  // Cuerpo de la petición que no es JSON válido (ej. un "{" sin cerrar).
+  // express.json() lo marca con type "entity.parse.failed".
+  if (err.type === "entity.parse.failed") {
+    return res.status(400).json({
+      error: "JSON_INVALIDO",
+      mensaje: "El cuerpo de la petición no es un JSON válido.",
+    });
+  }
+
+  // Cuerpo demasiado grande (el límite por defecto de express.json() es 100 kb)
+  if (err.type === "entity.too.large") {
+    return res.status(413).json({
+      error: "CUERPO_MUY_GRANDE",
+      mensaje: "La petición es demasiado grande.",
+    });
+  }
+
   // Errores al subir archivos
   if (err.name === "MulterError") {
     const mensaje =
