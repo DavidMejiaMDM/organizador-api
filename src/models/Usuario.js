@@ -11,6 +11,8 @@ const usuarioSchema = new mongoose.Schema(
       trim: true,
     },
     passwordHash: { type: String, required: true },
+    // Sube cada vez que se cambia la contraseña: los tokens emitidos con una versión anterior dejan de valer
+    versionSesion: { type: Number, default: 0 },
   },
   { timestamps: true, collection: "usuarios" }
 );

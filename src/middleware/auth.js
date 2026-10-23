@@ -15,9 +15,17 @@ async function requiereAuth(req, res, next) {
       return res.status(401).json({ error: "SESION_INVALIDA", mensaje: "Tu sesión expiró. Inicia sesión de nuevo." });
     }
 
-    const usuario = await Usuario.findById(payload.sub).select("nombre email");
+    const usuario = await Usuario.findById(payload.sub).select("nombre email versionSesion");
     if (!usuario) {
       return res.status(401).json({ error: "SESION_INVALIDA", mensaje: "Tu cuenta ya no existe." });
+    }
+
+    // Token emitido antes de un cambio de contraseña (los tokens antiguos no traen "v": cuentan como 0)
+    if ((payload.v || 0) !== (usuario.versionSesion || 0)) {
+      return res.status(401).json({
+        error: "SESION_INVALIDA",
+        mensaje: "Tu sesión se cerró porque cambió la contraseña. Inicia sesión de nuevo.",
+      });
     }
 
     req.usuario = usuario;
