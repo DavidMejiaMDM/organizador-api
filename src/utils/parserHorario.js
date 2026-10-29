@@ -1,8 +1,6 @@
-// Lector del "Horario académico" en PDF de la Uniautónoma del Cauca (Moodle).
+// Base Principal para mi Lector del Horario académico en formato PDF de la Uniautónoma del Cauca (Moodle).
 // Formato de la tabla: HORA | CURSO | JORNADA | GRUPO | FECHA INICIO | FECHA FINAL | DOCENTE
-// La columna HORA trae una o varias sesiones, por ejemplo:
-//   "Lunes -Salón:603 Campus principal( 8:00AM a 9:00AM), Viernes -Salón:603 Campus principal( 9:00AM a 11:00AM)"
-//   "Miercoles ( 9:00AM a 11:00AM)"            (sin salón)
+// La columna HORA trae una o varias sesiones, manejo una matriz 7xN
 
 const COLORES = ["#004A98", "#4F46E5", "#0284C7", "#0F766E", "#B45309", "#9333EA", "#BE123C", "#475569"];
 

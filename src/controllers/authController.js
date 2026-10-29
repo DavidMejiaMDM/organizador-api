@@ -6,14 +6,14 @@ const Tarea = require("../models/Tarea");
 
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-// Solo se permiten correos institucionales.
-// Si algún día cambia el dominio, se puede definir DOMINIO_PERMITIDO en el .env / en Render.
+// Esta restringido Solo para correos institucionales.
+// NOTA: para cambiar el dominio, se puede definir DOMINIO_PERMITIDO en el .env como en el Render.
 const DOMINIO = (process.env.DOMINIO_PERMITIDO || "uniautonoma.edu.co").trim().toLowerCase();
 
 const error = (res, status, codigo, mensaje, campo) =>
   res.status(status).json({ error: codigo, mensaje, ...(campo && { campo }) });
 
-// "v" es la versión de sesión: si la persona cambia su contraseña, sube, y los tokens viejos dejan de valer
+// "v" se usa para la versión de sesión: si la persona cambia su contraseña, sube, y los tokens viejos dejan de valer
 const firmar = (u) =>
   jwt.sign({ sub: u._id.toString(), v: u.versionSesion || 0 }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES || "30d",
