@@ -1,0 +1,20 @@
+const mongoose = require("mongoose");
+
+// Un documento por correo: guarda el código vigente (cifrado) y los contadores de límite.
+const codigoRecuperacionSchema = new mongoose.Schema(
+  {
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    codigoHash: { type: String, required: true },    // HMAC-SHA256 del código: el código en claro nunca se guarda
+    expiraEn: { type: Date, required: true },        // el código deja de valer a los 10 minutos
+    intentos: { type: Number, default: 0 },          // intentos de usar el código (máximo 5)
+    ultimoEnvio: { type: Date, required: true },     // para el enfriamiento entre envíos
+    ventanaInicio: { type: Date, required: true },   // inicio de la hora en la que se cuentan los envíos
+    envios: { type: Number, default: 0 },            // correos enviados en esa hora (máximo 5)
+    borrarEn: { type: Date, required: true },        // MongoDB borra el documento solo (índice TTL)
+  },
+  { collection: "codigosRecuperacion" }
+);
+
+codigoRecuperacionSchema.index({ borrarEn: 1 }, { expireAfterSeconds: 0 });
+
+module.exports = mongoose.model("CodigoRecuperacion", codigoRecuperacionSchema);

@@ -1,0 +1,77 @@
+// Envío de correos (Brevo).
+// Los servicios gratuitos de Render bloquean los puertos SMTP.
+//
+// Variables de entorno:
+//   CORREO_API_KEY      clave de la API de Brevo (obligatoria para enviar)
+//   CORREO_REMITENTE    correo remitente verificado en Brevo (obligatorio para enviar)
+//   CORREO_NOMBRE       nombre que ve quien recibe (opcional, por defecto "Organizador UA")
+//   CORREO_PROVEEDOR    "consola" imprime el código en la terminal en lugar de enviarlo (SOLO para desarrollo local)
+
+const URL_BREVO = "https://api.brevo.com/v3/smtp/email";
+const VIGENCIA_MINUTOS = 10;
+
+const escapar = (t) =>
+  String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+function plantilla(nombre, codigo) {
+  const texto =
+    `Hola ${nombre},\n\n` +
+    `Tu código para restablecer la contraseña de Organizador UA es: ${codigo}\n\n` +
+    `Vence en ${VIGENCIA_MINUTOS} minutos. Si no lo pediste, ignora este correo: tu contraseña no cambiará.`;
+
+  const html =
+    `<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:auto;color:#1E293B">` +
+    `<h2 style="color:#004A98;margin-bottom:4px">Organizador UA</h2>` +
+    `<p>Hola ${escapar(nombre)},</p>` +
+    `<p>Usa este código para restablecer tu contraseña:</p>` +
+    `<p style="font-size:32px;font-weight:bold;letter-spacing:8px;background:#F1F5F9;border-radius:12px;` +
+    `padding:16px;text-align:center;font-family:Consolas,monospace">${escapar(codigo)}</p>` +
+    `<p>Vence en <b>${VIGENCIA_MINUTOS} minutos</b>.</p>` +
+    `<p style="color:#64748B;font-size:13px">Si no lo pediste, ignora este correo: tu contraseña no cambiará.</p>` +
+    `</div>`;
+
+  return { texto, html };
+}
+
+async function enviarCodigoRecuperacion({ destino, nombre, codigo }) {
+  const proveedor = (process.env.CORREO_PROVEEDOR || (process.env.CORREO_API_KEY ? "brevo" : "")).toLowerCase();
+
+  if (proveedor === "consola") {
+    // Salvaguarda: en Render nunca se imprime el código
+    if (process.env.RENDER) throw new Error("El modo consola no se permite en Render");
+    console.log(`📧 [modo consola] Código de recuperación para ${destino}: ${codigo}`);
+    return;
+  }
+
+  const apiKey = process.env.CORREO_API_KEY;
+  const remitente = process.env.CORREO_REMITENTE;
+  if (proveedor !== "brevo" || !apiKey || !remitente) {
+    throw new Error("El envío de correo no está configurado (define CORREO_API_KEY y CORREO_REMITENTE)");
+  }
+
+  const { texto, html } = plantilla(nombre, codigo);
+  const controlador = new AbortController();
+  const temporizador = setTimeout(() => controlador.abort(), 10000);
+  try {
+    const respuesta = await fetch(URL_BREVO, {
+      method: "POST",
+      headers: { "api-key": apiKey, "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({
+        sender: { name: process.env.CORREO_NOMBRE || "Organizador UA", email: remitente },
+        to: [{ email: destino, name: nombre }],
+        subject: "Tu código para restablecer la contraseña",
+        htmlContent: html,
+        textContent: texto,
+      }),
+      signal: controlador.signal,
+    });
+    if (!respuesta.ok) {
+      const detalle = await respuesta.text().catch(() => "");
+      throw new Error(`Brevo respondió ${respuesta.status}: ${detalle.slice(0, 200)}`);
+    }
+  } finally {
+    clearTimeout(temporizador);
+  }
+}
+
+module.exports = { enviarCodigoRecuperacion, VIGENCIA_MINUTOS };

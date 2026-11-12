@@ -36,7 +36,7 @@ function validarHorarios(horarios) {
   return null;
 }
 
-// ---------- GET /clases  (opcional ?dia=miercoles) ----------
+// ---------- GET /clases  ----------
 exports.listar = async (req, res, next) => {
   try {
     const { dia } = req.query;
@@ -58,7 +58,7 @@ exports.listar = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ---------- GET /clases/today  (opcional ?simular=2026-10-07T10:30) ----------
+// ---------- GET /clases/today   ----------
 exports.hoy = async (req, res, next) => {
   try {
     const usuarioId = req.usuarioId;

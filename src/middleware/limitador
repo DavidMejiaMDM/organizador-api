@@ -1,0 +1,70 @@
+// Limitador de peticiones para la memoria y sin dependencias.
+// Los contadores viven en la memoria del servidor y esti se reinician si el servidor se reinicia o se duerme.
+
+const MAX_CLAVES = 10000;   // tope de claves guardadas (evita agotar la memoria con claves inventadas)
+
+function crearContador({ max, ventanaMs, ahora = Date.now }) {
+  const mapa = new Map();   // clave -> { cuenta, vence }
+
+  function vigente(clave) {
+    const e = mapa.get(clave);
+    if (!e) return null;
+    if (e.vence <= ahora()) { mapa.delete(clave); return null; }
+    return e;
+  }
+
+  const limpiar = () => {
+    const t = ahora();
+    for (const [clave, e] of mapa) if (e.vence <= t) mapa.delete(clave);
+  };
+  const temporizador = setInterval(limpiar, 60000);
+  if (temporizador.unref) temporizador.unref();   // no impide que el proceso termine
+
+  return {
+    max,
+    ventanaMs,
+    // Cuenta un intento y dice si ya se pasó del máximo
+    sumar(clave) {
+      let e = vigente(clave);
+      if (!e) {
+        if (mapa.size >= MAX_CLAVES) mapa.delete(mapa.keys().next().value);   // descarta la más antigua
+        e = { cuenta: 0, vence: ahora() + ventanaMs };
+        mapa.set(clave, e);
+      }
+      e.cuenta += 1;
+      return { bloqueado: e.cuenta > max, cuenta: e.cuenta, reintentarEnMs: Math.max(0, e.vence - ahora()) };
+    },
+    reiniciar(clave) { mapa.delete(clave); },
+    tamano() { return mapa.size; },
+    limpiar,
+  };
+}
+
+const obtenerIp = (req) => req.ip || (req.socket && req.socket.remoteAddress) || "desconocida";
+
+function responderBloqueo(res, reintentarEnMs, mensaje = "Demasiados intentos.") {
+  const segundos = Math.max(1, Math.ceil(reintentarEnMs / 1000));
+  const minutos = Math.ceil(segundos / 60);
+  res.setHeader("Retry-After", String(segundos));
+  return res.status(429).json({
+    error: "DEMASIADOS_INTENTOS",
+    mensaje: `${mensaje} Intenta de nuevo en ${minutos === 1 ? "1 minuto" : minutos + " minutos"}.`,
+    reintentarEnSegundos: segundos,
+  });
+}
+
+// Middleware: máximo de peticiones por IP en una ventana de tiempo
+function limitarPorIp({ nombre, max, ventanaMs, mensaje }) {
+  const contador = crearContador({ max, ventanaMs });
+  return function limitador(req, res, next) {
+    const ip = obtenerIp(req);
+    const estado = contador.sumar(ip);
+    if (estado.bloqueado) {
+      if (estado.cuenta === max + 1) console.warn(`🔒 Límite de ${nombre} alcanzado: ip=${ip}`);
+      return responderBloqueo(res, estado.reintentarEnMs, mensaje);
+    }
+    next();
+  };
+}
+
+module.exports = { crearContador, limitarPorIp, responderBloqueo, obtenerIp };
