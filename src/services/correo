@@ -16,14 +16,14 @@ const escapar = (t) =>
 function plantilla(nombre, codigo) {
   const texto =
     `Hola ${nombre},\n\n` +
-    `Tu código para restablecer la contraseña de Organizador UA es: ${codigo}\n\n` +
+    `Tu código para restablecer la contraseña de tu cuenta: ${codigo}\n\n` +
     `Vence en ${VIGENCIA_MINUTOS} minutos. Si no lo pediste, ignora este correo: tu contraseña no cambiará.`;
 
   const html =
     `<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:auto;color:#1E293B">` +
-    `<h2 style="color:#004A98;margin-bottom:4px">Organizador UA</h2>` +
+    `<h2 style="color:#004A98;margin-bottom:4px">NexusClass</h2>` +
     `<p>Hola ${escapar(nombre)},</p>` +
-    `<p>Usa este código para restablecer tu contraseña:</p>` +
+    `<p>Usa este código para restablecer tu contraseña y no lo compartas con nadie:</p>` +
     `<p style="font-size:32px;font-weight:bold;letter-spacing:8px;background:#F1F5F9;border-radius:12px;` +
     `padding:16px;text-align:center;font-family:Consolas,monospace">${escapar(codigo)}</p>` +
     `<p>Vence en <b>${VIGENCIA_MINUTOS} minutos</b>.</p>` +
@@ -57,7 +57,7 @@ async function enviarCodigoRecuperacion({ destino, nombre, codigo }) {
       method: "POST",
       headers: { "api-key": apiKey, "content-type": "application/json", accept: "application/json" },
       body: JSON.stringify({
-        sender: { name: process.env.CORREO_NOMBRE || "Organizador UA", email: remitente },
+        sender: { name: process.env.CORREO_NOMBRE || "NexusClass", email: remitente },
         to: [{ email: destino, name: nombre }],
         subject: "Tu código para restablecer la contraseña",
         htmlContent: html,
